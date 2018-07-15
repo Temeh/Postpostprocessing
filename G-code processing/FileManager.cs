@@ -58,7 +58,7 @@ namespace Postpostprocessing
                 if (!files[i].CheckNegativeXYZ())
                 {
                     Console.WriteLine("..Copying " + files[i].Filename);
-                    File.WriteAllText(ConfigurationManager.AppSettings["savePath"] + "_" + files[i].Filename, files[i].CombineLines());
+                    File.WriteAllText(ConfigurationManager.AppSettings["savePath"] + files[i].Filename, files[i].CombineLines());
                 }
                 else Console.WriteLine(files[i].Filename + " contains negative XYZ vallues and was not copied");
                 i++;
