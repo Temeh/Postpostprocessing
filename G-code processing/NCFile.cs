@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 
 namespace Postpostprocessing
 {
     class NCFile
     {
+       public Stopwatch sw;//diagnostics
         readonly string filename;
         public string Filename { get { return filename; } }
         string[] lines;
@@ -20,6 +22,7 @@ namespace Postpostprocessing
 
         public NCFile(string name)
         {
+            sw = new Stopwatch();//diagnostics
             filename = name;
             StreamReader sr = new StreamReader(filename);
             SplitString(sr.ReadToEnd());
@@ -32,8 +35,10 @@ namespace Postpostprocessing
         /// <param name="text">the string you want to split</param>
         void SplitString(string text)
         {
+            sw.Start();//diagnostics
             text = text.Replace("\r", "");
             lines = text.Split('\n');
+            sw.Stop();//diagnostics
         }
         /// <summary>
         /// Combines all the lines in the file and returns them as a single string
@@ -41,7 +46,7 @@ namespace Postpostprocessing
         /// <returns>string of the whole file</returns>
        public string CombineLines()
         {
-
+            sw.Start();//diagnostics
             string text;
             text = lines[0];
             int i = 1;
@@ -50,6 +55,7 @@ namespace Postpostprocessing
                 text = text + "\r\n" + lines[i];
                 i++;
             }
+            sw.Stop(); //diagnostics
             return text;
         }
 

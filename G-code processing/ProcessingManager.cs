@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
+
 
 namespace Postpostprocessing
 {
@@ -17,6 +19,7 @@ namespace Postpostprocessing
         /// <param name="fileNames">names of the files to check/process</param>
         public ProcessingManager()
         {
+            Stopwatch sw = new Stopwatch();            sw.Start();
             FileManager fm = new FileManager();
             NCFile[] files = fm.Files;
 
@@ -29,6 +32,11 @@ namespace Postpostprocessing
             Console.WriteLine("Modified and saved all files!");
             Console.WriteLine("Copying files");
             fm.CopyFile();
+
+            sw.Stop();
+            Console.WriteLine("Work complete in "+sw.Elapsed.ToString("mm\\:ss"));
+            Console.WriteLine(files[0].sw.Elapsed);//diagnostics
+            Console.WriteLine(files[1].sw.Elapsed);//diagnostics
             Console.WriteLine("All done, press any key to close");
             Console.ReadKey();
 
