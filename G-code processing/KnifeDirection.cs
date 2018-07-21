@@ -12,9 +12,6 @@ namespace Postpostprocessing
     class KnifeDirection
     {
         NCFile file;
-        double currentX;
-        double currentY;
-        double currentZ;
 
         public KnifeDirection(NCFile[] files)
         {
@@ -26,6 +23,7 @@ namespace Postpostprocessing
                 i++;
             }
         }
+
         /// <summary>
         /// Attempts to find new cuts outs by looking for rapid movement
         /// </summary>
@@ -34,7 +32,11 @@ namespace Postpostprocessing
         {
             bool knifeActive = false;
             bool rapidMovement = false;
-            double[] whereAmINow = new double[2]; //0=X, 1=Y
+            bool foundEntryPoint = false;
+            double[] whereAmINow = new double[2]; //0=X, 1=Y, 2=Z, 3=F
+            double[] startPoint = new double[whereAmINow.Length]; //0=X, 1=Y, 2=Z, 3=F
+            double[] entryPoint = new double[whereAmINow.Length]; //0=X, 1=Y, 2=Z, 3=F 
+            int locationInFile=-1; // line# in the file, of the entry point
             int i = 0;
             while (i < file.AmountLines())
             {
@@ -42,48 +44,48 @@ namespace Postpostprocessing
                 {
                     string line = file.GetCode(i);
 
-                    if (knifeActive)
-                    {
-                        whereAmINow = GetLocation(line, whereAmINow);
-                        if (line.StartsWith("G00")) rapidMovement = true;
-                    }
-                    if (rapidMovement)
-                    {
-                        while (rapidMovement && i < file.AmountLines())
-                        {
-                            line = file.GetCode(i);
-                            if (line.Contains("X") || line.Contains("Y"))
-                            {
-                                whereAmINow = GetLocation(line, whereAmINow);
-                                int j = i + 1;
-                                while (j < file.AmountLines())
-                                {
-                                    line = file.GetCode(j);
-                                    if (line.Contains('X') || line.Contains('Y'))
-                                    {
-                                        double[] nextPoint = new double[2];
-                                        nextPoint[0] = whereAmINow[0];
-                                        nextPoint[1] = whereAmINow[1];
-                                        nextPoint = GetLocation(line, nextPoint);
-                                        InsertNewPoint(nextPoint[0], nextPoint[1], whereAmINow[0], whereAmINow[1], i);
-                                        i = j-1; rapidMovement = false;
-                                        break;
-                                    }
-                                    j++;
-                                }
-                            }
-                            i++;
-                        }
-                        continue;
-                    }
                     if (line.StartsWith("T"))//checks for tool change and checks if new tool is knife or not
                     {
                         int value;
                         if (int.TryParse(line.Substring(1, line.IndexOf(" ") - 1), NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value))
                         {
                             if (value == 25) knifeActive = true;
-                            else knifeActive = false;
+                            else { knifeActive = false; rapidMovement = false; foundEntryPoint = false; }
+                        }
+                    }
+
+                    if (knifeActive)
+                    {
+                        whereAmINow = GetLocation(line, whereAmINow);
+                        if (line.StartsWith("G00") && !foundEntryPoint)
+                        {
+                            rapidMovement = true;
+                            Array.Copy(whereAmINow, startPoint, whereAmINow.Length);
+                        }
+                    }
+                    else { i++; continue; }
+
+                    if (rapidMovement && knifeActive)
+                    {
+                        if (line.Contains("X") || line.Contains("Y"))
+                        {
+                            Array.Copy(whereAmINow, entryPoint, whereAmINow.Length);
+                            foundEntryPoint = true;
+                            rapidMovement = false; locationInFile = i;
                             i++; continue;
+                        }
+                    }
+
+                    if (foundEntryPoint)
+                    {
+                        if (line.Contains("X") || line.Contains("Y"))
+                        {
+                            double[] nextPoint = new double[whereAmINow.Length];
+                            Array.Copy(whereAmINow, nextPoint, whereAmINow.Length);
+                            nextPoint[0] = whereAmINow[0];
+                            nextPoint[1] = whereAmINow[1];
+                            InsertNewPoint(startPoint,entryPoint, nextPoint, locationInFile);
+                            foundEntryPoint = false;   
                         }
                     }
                 }
@@ -96,15 +98,14 @@ namespace Postpostprocessing
         /// <summary>
         /// changes the new x/y to be a point .1mm away from the original location, away from the next location, to force the knife to turn the right direction before entering the material
         /// </summary>
-        /// <param name="x2"></param>
-        /// <param name="y2"></param>
-        /// <param name="x1"></param>
-        /// <param name="y1"></param>
-        void InsertNewPoint(double x2, double y2, double x1, double y1, int i)
+        /// <param name="entry">Array holding the entry point coordinates</param>
+        /// <param name="next">Array holding the next point after entry point</param>
+        void InsertNewPoint(double[]start, double[] entry, double[] next, int i)
         {
+            double x1 = entry[0]; double y1 = entry[1];
+            double x2 = next[0]; double y2 = next[1];
             //adds a new line with the original x/y coordinates
             string newline = "N" + (file.GetLineBlock(i) + 1) + " " + file.GetCode(i);
-            file.AddNewLine(i, newline);
 
             //Finds how much relative x/y should change for newX/newY
             double relativeX = -(x2 - x1);
@@ -130,24 +131,29 @@ namespace Postpostprocessing
             temp = Math.Round((y1 + relativeY), 3);
             line = line + temp.ToString(nfi);
 
+            line = line + "\r\n" + newline;
             file.UpdateLine(i, line);
         }
 
         /// <summary>
-        /// Checks if there is a change of tool
+        /// Checks if there is a change of tool, and returns true if new tool is knife(T25), false if any other tool, and returns the original tool status if no change
         /// </summary>
-        /// <param name="i">int of current line number</param>
-        /// <returns>int of new tool number, 0 for no tool change</returns>
-        int checkATC(int i)
+        /// <param name="line">int of current line number</param>
+        /// /// <param name="knifeActive">bool of knife's previous status</param>
+        /// <returns>bool indicating if knife is active or not</returns>
+        bool CheckKnife(string line, bool knifeActive)
         {
-            string line = file.GetCode(i);
-            if (line.IndexOf("T") == 0)
+            if (line.StartsWith("T"))//checks for tool change and checks if new tool is knife or not
             {
                 int value;
                 if (int.TryParse(line.Substring(1, line.IndexOf(" ") - 1), NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value))
-                    return value;
+                {
+                    if (value == 25) return true;
+                    else return false;
+                }
+                else return knifeActive;
             }
-            return 0;
+            else return knifeActive;
         }
         /// <summary>
         /// Updates the coordinate array with new locations in the string(if any)
@@ -172,7 +178,7 @@ namespace Postpostprocessing
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
                 whereAmINow[1] = value;
             }
-            /* //not bothering with Z values for now
+            /* //not bothering with Z/F values for now
             if (line.Contains("Z"))
             {
                 string subline = line.Substring(line.IndexOf("Z") + 1);
@@ -180,7 +186,14 @@ namespace Postpostprocessing
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
                 whereAmINow[2] = value;
             }
-             */
+            if (line.Contains("F"))
+            {
+                string subline = line.Substring(line.IndexOf("F") + 1);
+                if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
+                double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
+                whereAmINow[3] = value;
+            }
+            */
             return whereAmINow;
         }
     }

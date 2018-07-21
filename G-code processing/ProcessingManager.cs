@@ -34,9 +34,7 @@ namespace Postpostprocessing
             fm.CopyFile();
 
             sw.Stop();
-            Console.WriteLine("Work complete in "+sw.Elapsed.ToString("mm\\:ss"));
-            Console.WriteLine(files[0].sw.Elapsed);//diagnostics
-            Console.WriteLine(files[1].sw.Elapsed);//diagnostics
+            Console.WriteLine("Work complete in "+sw.Elapsed.ToString("mm\\:ss\\.fff"));
             Console.WriteLine("All done, press any key to close");
             Console.ReadKey();
 

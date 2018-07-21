@@ -9,7 +9,6 @@ namespace Postpostprocessing
 {
     class NCFile
     {
-       public Stopwatch sw;//diagnostics
         readonly string filename;
         public string Filename { get { return filename; } }
         string[] lines;
@@ -22,7 +21,6 @@ namespace Postpostprocessing
 
         public NCFile(string name)
         {
-            sw = new Stopwatch();//diagnostics
             filename = name;
             StreamReader sr = new StreamReader(filename);
             SplitString(sr.ReadToEnd());
@@ -35,10 +33,8 @@ namespace Postpostprocessing
         /// <param name="text">the string you want to split</param>
         void SplitString(string text)
         {
-            sw.Start();//diagnostics
             text = text.Replace("\r", "");
             lines = text.Split('\n');
-            sw.Stop();//diagnostics
         }
         /// <summary>
         /// Combines all the lines in the file and returns them as a single string
@@ -46,7 +42,6 @@ namespace Postpostprocessing
         /// <returns>string of the whole file</returns>
        public string CombineLines()
         {
-            sw.Start();//diagnostics
             string text;
             text = lines[0];
             int i = 1;
@@ -55,7 +50,6 @@ namespace Postpostprocessing
                 text = text + "\r\n" + lines[i];
                 i++;
             }
-            sw.Stop(); //diagnostics
             return text;
         }
 
@@ -161,9 +155,25 @@ namespace Postpostprocessing
         public void AddNewLine(int i, string newline)
         {
             lines[i] = lines[i] + "\r\n" + newline;
-            SplitString(CombineLines());
+         //   SplitString(CombineLines());
         }
 
+        /// <summary>
+        /// checks the distance bewteen 2 points on the x/y surface
+        /// </summary>
+        /// <param name="first">double with the location of the first point</param>
+        /// <param name="second">double with the location of the second point</param>
+        /// <returns></returns>
+        public double CheckDistance(double[] first, double[] second)
+        {
+            double xLength = Math.Abs(first[0] - second[0]);
+            double yLenght = Math.Abs(first[1] - second[1]);
+            if (xLength == 0) return yLenght;
+            if (yLenght == 0) return xLength;
+            double length = Math.Sqrt(Math.Pow(xLength,2) + Math.Pow(yLenght,2));
+            return length;
+        }
     }
+
 
 }
