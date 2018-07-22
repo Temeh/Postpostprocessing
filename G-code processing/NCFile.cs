@@ -16,7 +16,7 @@ namespace Postpostprocessing
         bool negativeY = false;
         bool negativeZ = false;
         bool previousPPP = false;
-       public bool PreviousPPP { get { return previousPPP; } }
+        public bool PreviousPPP { get { return previousPPP; } }
 
 
         public NCFile(string name)
@@ -40,7 +40,7 @@ namespace Postpostprocessing
         /// Combines all the lines in the file and returns them as a single string
         /// </summary>
         /// <returns>string of the whole file</returns>
-       public string CombineLines()
+        public string CombineLines()
         {
             string text;
             text = lines[0];
@@ -155,7 +155,7 @@ namespace Postpostprocessing
         public void AddNewLine(int i, string newline)
         {
             lines[i] = lines[i] + "\r\n" + newline;
-         //   SplitString(CombineLines());
+            //   SplitString(CombineLines());
         }
 
         /// <summary>
@@ -170,8 +170,35 @@ namespace Postpostprocessing
             double yLenght = Math.Abs(first[1] - second[1]);
             if (xLength == 0) return yLenght;
             if (yLenght == 0) return xLength;
-            double length = Math.Sqrt(Math.Pow(xLength,2) + Math.Pow(yLenght,2));
+            double length = Math.Sqrt(Math.Pow(xLength, 2) + Math.Pow(yLenght, 2));
             return length;
+        }
+
+        /// <summary>
+        /// takes a string of doubles with coordinates of start x/y and end x/y and checks what direction  movement is happening in
+        /// </summary>
+        /// <param name="start">start location</param>
+        /// <param name="end">end location</param>
+        /// <returns>the angle</returns>
+        public double CheckDirection(double[] start, double[] end)
+        {
+            double x = end[0] - start[0];
+            double y = end[1] - start[1];
+            double hypotenus = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
+            double angle = -1;
+            if (x == 0 || y == 0)
+            {
+                if (x > 0) angle = 0;
+                else if (x < 0) angle = 180;
+                else if (y > 0) angle = 90;
+                else if (y < 0) angle = 270;
+            }
+            else
+            {
+                angle = Math.Acos((x / hypotenus)) * 180 / Math.PI;
+                if (y < 0) angle = 360 - angle;
+            }
+            return angle;
         }
     }
 

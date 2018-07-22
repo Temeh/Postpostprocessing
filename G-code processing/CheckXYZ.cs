@@ -36,7 +36,7 @@ namespace Postpostprocessing
                         string xblock = line.Substring(line.IndexOf("X") + 1);
                         if (xblock.IndexOf(" ") > -1) xblock = xblock.Substring(0, xblock.IndexOf(" "));
                         if (double.TryParse(xblock, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value))
-                            if (value < double.Parse(ConfigurationSettings.AppSettings["maxNegativeX"]))
+                            if (value < double.Parse(ConfigurationManager.AppSettings["maxNegativeX"]))
                                 file.negativeXYZ('X');
                     }
                     if (line.IndexOf("Y") > -1)
@@ -44,7 +44,7 @@ namespace Postpostprocessing
                         string yblock = line.Substring(line.IndexOf("Y") + 1);
                         if (yblock.IndexOf(" ") > -1) yblock = yblock.Substring(0, yblock.IndexOf(" "));
                         if (double.TryParse(yblock, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value))
-                            if (value < double.Parse(ConfigurationSettings.AppSettings["maxNegativeY"]))
+                            if (value < double.Parse(ConfigurationManager.AppSettings["maxNegativeY"]))
                                 file.negativeXYZ('Y');
                     }
                     if (line.IndexOf("Z") > -1)
@@ -52,7 +52,7 @@ namespace Postpostprocessing
                         string zblock = line.Substring(line.IndexOf("Z") + 1);
                         if (zblock.IndexOf(" ") > -1) zblock = zblock.Substring(0, zblock.IndexOf(" "));
                         if (double.TryParse(zblock, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value))
-                            if (value < double.Parse(ConfigurationSettings.AppSettings["maxNegativeZ"]))
+                            if (value < double.Parse(ConfigurationManager.AppSettings["maxNegativeZ"]))
                                 file.negativeXYZ('Z');
                     }
                 }

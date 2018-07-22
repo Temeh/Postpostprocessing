@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Globalization;
+using System.Configuration;
 
 namespace Postpostprocessing
 {
@@ -33,10 +34,10 @@ namespace Postpostprocessing
             bool knifeActive = false;
             bool rapidMovement = false;
             bool foundEntryPoint = false;
-            double[] whereAmINow = new double[2]; //0=X, 1=Y, 2=Z, 3=F
-            double[] startPoint = new double[whereAmINow.Length]; //0=X, 1=Y, 2=Z, 3=F
-            double[] entryPoint = new double[whereAmINow.Length]; //0=X, 1=Y, 2=Z, 3=F 
-            int locationInFile=-1; // line# in the file, of the entry point
+            double[][] whereAmINow = new double[5][]; //[][0]=X, [][1]=Y, [][2]=Z, [][3]=F, [][4]=A
+            double[] startPoint = new double[5]; //0=X, 1=Y, 2=Z, 3=F
+            double[] entryPoint = new double[5]; //0=X, 1=Y, 2=Z, 3=F 
+            int locationInFile = -1; // line# in the file, of the entry point
             int i = 0;
             while (i < file.AmountLines())
             {
@@ -60,7 +61,7 @@ namespace Postpostprocessing
                         if (line.StartsWith("G00") && !foundEntryPoint)
                         {
                             rapidMovement = true;
-                            Array.Copy(whereAmINow, startPoint, whereAmINow.Length);
+                            Array.Copy(whereAmINow[0], startPoint, whereAmINow[0].Length);
                         }
                     }
                     else { i++; continue; }
@@ -69,7 +70,7 @@ namespace Postpostprocessing
                     {
                         if (line.Contains("X") || line.Contains("Y"))
                         {
-                            Array.Copy(whereAmINow, entryPoint, whereAmINow.Length);
+                            Array.Copy(whereAmINow[0], entryPoint, whereAmINow[0].Length);
                             foundEntryPoint = true;
                             rapidMovement = false; locationInFile = i;
                             i++; continue;
@@ -80,12 +81,11 @@ namespace Postpostprocessing
                     {
                         if (line.Contains("X") || line.Contains("Y"))
                         {
-                            double[] nextPoint = new double[whereAmINow.Length];
-                            Array.Copy(whereAmINow, nextPoint, whereAmINow.Length);
-                            nextPoint[0] = whereAmINow[0];
-                            nextPoint[1] = whereAmINow[1];
-                            InsertNewPoint(startPoint,entryPoint, nextPoint, locationInFile);
-                            foundEntryPoint = false;   
+                            double[] nextPoint = new double[whereAmINow[0].Length];
+                            Array.Copy(whereAmINow[0], nextPoint, whereAmINow[0].Length);
+                            InsertKnifeTurning(whereAmINow, locationInFile);
+                            //InsertNewPoint(entryPoint, nextPoint, locationInFile);
+                            foundEntryPoint = false;
                         }
                     }
                 }
@@ -100,7 +100,7 @@ namespace Postpostprocessing
         /// </summary>
         /// <param name="entry">Array holding the entry point coordinates</param>
         /// <param name="next">Array holding the next point after entry point</param>
-        void InsertNewPoint(double[]start, double[] entry, double[] next, int i)
+        void InsertNewPoint(double[] entry, double[] next, int i)
         {
             double x1 = entry[0]; double y1 = entry[1];
             double x2 = next[0]; double y2 = next[1];
@@ -135,6 +135,32 @@ namespace Postpostprocessing
             file.UpdateLine(i, line);
         }
 
+        void InsertKnifeTurning(double[][] whereAmINow, int i)
+        {
+
+           if (whereAmINow[2] == null || file.CheckDistance(whereAmINow[1], whereAmINow[2]) > double.Parse(ConfigurationManager.AppSettings["minDistForRapidMove"]))
+            {
+                InsertNewPoint(whereAmINow[1], whereAmINow[0], i);
+            }
+            else
+            {
+                double newAngle = file.CheckDirection(whereAmINow[1], whereAmINow[0]);
+                double oldAngle = file.CheckDirection(whereAmINow[3], whereAmINow[2]);
+                double degreesTurned = oldAngle - newAngle;
+                if (degreesTurned < 0) degreesTurned = degreesTurned + 360;
+                string turnDirection;
+                if (degreesTurned<180) turnDirection = "G02";
+                else turnDirection = "G03";
+
+                NumberFormatInfo nfi = new NumberFormatInfo();
+                nfi.NumberDecimalSeparator = ".";
+                string line = "N" + file.GetLineBlock(i) + " " + turnDirection.ToString(nfi) + " X" + whereAmINow[0][0].ToString(nfi);
+                line = line + " Y" + whereAmINow[0][1].ToString(nfi) + " F12000." + " A" + newAngle.ToString(nfi);
+                line = line + "\r\nF2000.";
+                file.UpdateLine(i, line);
+            }
+        }
+
         /// <summary>
         /// Checks if there is a change of tool, and returns true if new tool is knife(T25), false if any other tool, and returns the original tool status if no change
         /// </summary>
@@ -161,39 +187,56 @@ namespace Postpostprocessing
         /// <param name="subline">the string you want to check</param>
         /// <param name="c">array of current coordinates</param>
         /// <returns>returns the coordinate array taken as input with updated values</returns>
-        double[] GetLocation(string line, double[] whereAmINow)
+        double[][] GetLocation(string line, double[][] whereAmINow)
         {
+            if (line.Contains("X") || line.Contains("Y"))
+            {
+                if (!(whereAmINow[3] == null)) whereAmINow[4] = whereAmINow[3].Clone() as double[];
+                if (!(whereAmINow[2] == null)) whereAmINow[3] = whereAmINow[2].Clone() as double[];
+                if (!(whereAmINow[1] == null)) whereAmINow[2] = whereAmINow[1].Clone() as double[];
+                if (!(whereAmINow[0] == null)) whereAmINow[1] = whereAmINow[0].Clone() as double[];
+                if (whereAmINow[0] == null) whereAmINow[0] = new double[5];
+            }
             double value;
             if (line.Contains("X"))
             {
                 string subline = line.Substring(line.IndexOf("X") + 1);
                 if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[0] = value;
+                whereAmINow[0][0] = value;
             }
             if (line.Contains("Y"))
             {
                 string subline = line.Substring(line.IndexOf("Y") + 1);
                 if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[1] = value;
+                whereAmINow[0][1] = value;
             }
-            /* //not bothering with Z/F values for now
+            /*
             if (line.Contains("Z"))
             {
                 string subline = line.Substring(line.IndexOf("Z") + 1);
                 if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[2] = value;
+                whereAmINow[0][2] = value;
             }
             if (line.Contains("F"))
             {
                 string subline = line.Substring(line.IndexOf("F") + 1);
                 if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[3] = value;
+                whereAmINow[0][3] = value;
             }
-            */
+             */
+            if (line.Contains("A") && (line.Contains("X") || line.Contains("Y")))
+            {
+                string subline = line.Substring(line.IndexOf("A") + 1);
+                if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
+                double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
+                whereAmINow[0][4] = value;
+
+            }
+            else if (line.Contains("X") || line.Contains("Y")) whereAmINow[0][4] = -1;
             return whereAmINow;
         }
     }
