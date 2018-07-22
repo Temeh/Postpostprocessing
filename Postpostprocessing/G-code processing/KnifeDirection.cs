@@ -152,10 +152,11 @@ namespace Postpostprocessing
                 if (degreesTurned<180) turnDirection = "G02";
                 else turnDirection = "G03";
 
+                newAngle = Math.Round(newAngle, 3);
                 NumberFormatInfo nfi = new NumberFormatInfo();
                 nfi.NumberDecimalSeparator = ".";
-                string line = "N" + file.GetLineBlock(i) + " " + turnDirection.ToString(nfi) + " X" + whereAmINow[0][0].ToString(nfi);
-                line = line + " Y" + whereAmINow[0][1].ToString(nfi) + " F12000." + " A" + newAngle.ToString(nfi);
+                string line = "N" + file.GetLineBlock(i) + " " + turnDirection.ToString(nfi) + " X" + whereAmINow[1][0].ToString(nfi);
+                line = line + " Y" + whereAmINow[1][1].ToString(nfi) + " F12000." + " A" + newAngle.ToString(nfi)+" R10000.";
                 line = line + "\r\nF2000.";
                 file.UpdateLine(i, line);
             }

@@ -197,6 +197,7 @@ namespace Postpostprocessing
             {
                 angle = Math.Acos((x / hypotenus)) * 180 / Math.PI;
                 if (y < 0) angle = 360 - angle;
+                angle = Math.Round(angle, 3);
             }
             return angle;
         }
