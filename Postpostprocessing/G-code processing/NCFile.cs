@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Postpostprocessing
 {
@@ -200,6 +201,24 @@ namespace Postpostprocessing
                 angle = Math.Round(angle, 3);
             }
             return angle;
+        }
+
+        /// <summary>
+        /// Takes a double and converts it to a string with upto 3 decimals, and always having a decimal separator even if double is a whole number.
+        /// </summary>
+        /// <param name="number">the double you want to turn to a string</param>
+        /// <returns></returns>
+        public string DoubleToString(double number)
+        {
+            number = Math.Round(number, 3);
+            NumberFormatInfo nfi = new NumberFormatInfo();
+            nfi.NumberDecimalSeparator = ".";
+            string stringy = number.ToString(nfi);
+            if (stringy.IndexOf(".") < 0)
+            {
+                stringy = stringy + ".";
+            }
+            return stringy;
         }
     }
 

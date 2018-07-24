@@ -127,9 +127,9 @@ namespace Postpostprocessing
             nfi.NumberDecimalSeparator = ".";
             string line = "N" + file.GetLineBlock(i) + " G00 X";
             double temp = Math.Round((x1 + relativeX), 3);
-            line = line + temp.ToString(nfi) + " Y";
+            line = line + file.DoubleToString(temp) + " Y";
             temp = Math.Round((y1 + relativeY), 3);
-            line = line + temp.ToString(nfi);
+            line = line + file.DoubleToString(temp);
 
             line = line + "\r\n" + newline;
             file.UpdateLine(i, line);
@@ -155,9 +155,9 @@ namespace Postpostprocessing
                 newAngle = Math.Round(newAngle, 3);
                 NumberFormatInfo nfi = new NumberFormatInfo();
                 nfi.NumberDecimalSeparator = ".";
-                string line = "N" + file.GetLineBlock(i) + " " + turnDirection.ToString(nfi) + " X" + whereAmINow[1][0].ToString(nfi);
-                line = line + " Y" + whereAmINow[1][1].ToString(nfi) + " F12000." + " A" + newAngle.ToString(nfi)+" R10000.";
-                line = line + "\r\nF2000.";
+                string line = "N" + file.GetLineBlock(i) + " " +turnDirection.ToString(nfi) + " X" +file.DoubleToString(whereAmINow[1][0]);
+                line = line + " Y" +file.DoubleToString( whereAmINow[1][1]) + " F" + ConfigurationManager.AppSettings["aboveMaterialRadiusSpeed"] + " A" +file.DoubleToString( newAngle) + " R" + ConfigurationManager.AppSettings["radiusAboveMaterial"];
+                line = line + "\r\nN"+(file.GetLineBlock(i)+1)+" F2000.";
                 file.UpdateLine(i, line);
             }
         }
