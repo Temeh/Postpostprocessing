@@ -12,7 +12,9 @@ namespace Postpostprocessing
     {
         readonly string filename;
         public string Filename { get { return filename; } }
-        string[] lines;
+        string comment;
+        public string Comment { get { return comment; } }
+        protected string[] lines;
         bool negativeX = false;
         bool negativeY = false;
         bool negativeZ = false;
@@ -27,7 +29,40 @@ namespace Postpostprocessing
             SplitString(sr.ReadToEnd());
             sr.Dispose();
             if (lines[0].Contains("XYZ")) previousPPP = true;
+            FixComment();
         }
+        /// <summary>
+        /// Fixes comments so that if comments exists on the second line, it will be added as a comment on the first line
+        /// If first line has a comment already, the second line comment as added at the end
+        /// </summary>
+        void FixComment()
+        {
+            string firstComment = "";
+            string secondComment = "";
+            if (lines[0].IndexOf("(") > -1)
+            {
+                firstComment = lines[0].Substring(lines[0].IndexOf("(") + 1);
+                if (firstComment.Contains(")")) firstComment = firstComment.Substring(0, firstComment.IndexOf(")"));
+                else firstComment = "";
+            }
+            if (lines[1].IndexOf("(") > -1)
+            {
+                secondComment = lines[1].Substring(lines[1].IndexOf("(") + 1);
+                if (secondComment.Contains(")"))
+                {
+                    secondComment = secondComment.Substring(0, secondComment.IndexOf(")"));
+                    lines[1] = lines[1].Substring(0, lines[1].IndexOf("("));
+                }
+                else secondComment = "";
+            }
+            firstComment = firstComment +" "+ secondComment;
+            if (!(firstComment == " "))
+            {
+                lines[0] = "(" + firstComment + ")";
+                comment = firstComment;
+            }
+        }
+
         /// <summary>
         /// Splits a string into one string for each linebreak
         /// </summary>

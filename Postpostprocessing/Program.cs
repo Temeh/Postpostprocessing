@@ -10,6 +10,27 @@ namespace Postpostprocessing
     {
         static void Main(string[] args)
         {
+            FileMerger fm =new FileMerger();
+            int filesFound=fm.CheckMergerCandidates();
+            if (filesFound>0)
+            {
+                Console.WriteLine("Found " + filesFound + " merger candidates...");
+                Console.WriteLine("press m for merger console or press space to continue to post processing");
+                while (true)
+                {
+                    ConsoleKeyInfo c = Console.ReadKey();
+                    if (c.KeyChar == 'm')
+                    {
+                        fm.OpenMergerConsole();
+
+                    }
+                    else if (c.KeyChar == ' ')
+                    {
+                        break;
+                    }
+                }
+            }
+            Console.WriteLine("stop program!");
             ProcessingManager pm = new ProcessingManager();
         }
     }

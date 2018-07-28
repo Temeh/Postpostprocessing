@@ -138,7 +138,7 @@ namespace Postpostprocessing
         void InsertKnifeTurning(double[][] whereAmINow, int i)
         {
 
-           if (whereAmINow[2] == null || file.CheckDistance(whereAmINow[1], whereAmINow[2]) > double.Parse(ConfigurationManager.AppSettings["minDistForRapidMove"]))
+            if (whereAmINow[2] == null || file.CheckDistance(whereAmINow[1], whereAmINow[2]) > double.Parse(ConfigurationManager.AppSettings["minDistForRapidMove"]))
             {
                 InsertNewPoint(whereAmINow[1], whereAmINow[0], i);
             }
@@ -149,15 +149,15 @@ namespace Postpostprocessing
                 double degreesTurned = oldAngle - newAngle;
                 if (degreesTurned < 0) degreesTurned = degreesTurned + 360;
                 string turnDirection;
-                if (degreesTurned<180) turnDirection = "G02";
+                if (degreesTurned < 180) turnDirection = "G02";
                 else turnDirection = "G03";
 
                 newAngle = Math.Round(newAngle, 3);
                 NumberFormatInfo nfi = new NumberFormatInfo();
                 nfi.NumberDecimalSeparator = ".";
-                string line = "N" + file.GetLineBlock(i) + " " +turnDirection.ToString(nfi) + " X" +file.DoubleToString(whereAmINow[1][0]);
-                line = line + " Y" +file.DoubleToString( whereAmINow[1][1]) + " F" + ConfigurationManager.AppSettings["aboveMaterialRadiusSpeed"] + " A" +file.DoubleToString( newAngle) + " R" + ConfigurationManager.AppSettings["radiusAboveMaterial"];
-                line = line + "\r\nN"+(file.GetLineBlock(i)+1)+" F2000.";
+                string line = "N" + file.GetLineBlock(i) + " " + turnDirection.ToString(nfi) + " X" + file.DoubleToString(whereAmINow[1][0]);
+                line = line + " Y" + file.DoubleToString(whereAmINow[1][1]) + " F" + ConfigurationManager.AppSettings["aboveMaterialRadiusSpeed"] + " A" + file.DoubleToString(newAngle) + " R" + ConfigurationManager.AppSettings["radiusAboveMaterial"];
+                line = line + "\r\nN" + (file.GetLineBlock(i) + 1) + " F2000.";
                 file.UpdateLine(i, line);
             }
         }
