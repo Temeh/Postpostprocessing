@@ -59,6 +59,8 @@ namespace Postpostprocessing
                 if (c.KeyChar == 'r') Restart();
                 if (c.KeyChar == 'a') AddFile();
                 if (c.KeyChar == 'i') Info();
+                if (c.KeyChar == 's') Save();
+                if (c.KeyChar == 'e') break;
             }
         }
 
@@ -100,13 +102,12 @@ namespace Postpostprocessing
         }
         void AddFile()
         {
-            Console.WriteLine("Adding files... e to exit...\nformat: column:firstfilename,secondfilename,etc");
             while (true)
             {
                 try
                 {
                     Console.WriteLine("Adding files... e to exit...\nformat: column:firstfilename,secondfilename,etc");
-                    string input = Console.ReadLine();
+                    string input = Console.ReadLine(); Console.WriteLine();
                     if (input == "exit") { Console.WriteLine("Exiting AddFile..."); break; }
                     int column = int.Parse(input.Substring(0, input.IndexOf(":"))) - 1;
                     List<string[]> list = new List<string[]>();
@@ -116,7 +117,7 @@ namespace Postpostprocessing
                         string[] file = new string[2]; // 0=filename, 1=rotation option
                         file[0] = input.Substring(0, 4);
                         if (!targetFiles.Contains(file[0])) Console.WriteLine("Bad file name detected, try again");
-                        string temp="";
+                        string temp = "";
                         if (input.Length > 4) temp = input.Substring(4, 1);
                         if (temp == "l" || temp == "r" || temp == "t") file[1] = temp;
                         else file[1] = "";
@@ -126,13 +127,28 @@ namespace Postpostprocessing
                     }
                     array.AddToArray(list, column);
                     Console.WriteLine("Successfully added files to array.");
+                    Info();
                 }
                 catch (Exception e) { Console.WriteLine("Bad input, try again..(error " + e + ")"); }
             }
         }
         void Info()
         {
-            Console.WriteLine("Used area is " + array.UsedArea());
+            Console.WriteLine("Used area is now " + array.UsedArea() + " using " + array.Coloumns);
+            int i = 0;
+            while (i < array.Coloumns)
+            {
+                Console.Write("[" + array.ColumnSize(i) + ":" + array.ColumnLength(i) + "] ");
+                i++;
+            }
+            Console.WriteLine();
+        }
+        /// <summary>
+        /// Saves the current array of files into a single .nc file
+        /// </summary>
+        void Save()
+        {
+            array.SaveFile();
         }
     }
 }

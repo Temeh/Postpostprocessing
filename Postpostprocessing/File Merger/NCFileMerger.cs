@@ -7,14 +7,14 @@ namespace Postpostprocessing
 {
     class NCFileMerger : NCFile
     {
-        double xMin; bool xSet = false;
+        double xMin;
         double xMax;
-        double yMin; bool ySet = false;
+        double yMin;
         double yMax;
         double xOffset;
         double yOffset;
-        double xArrayOffset; public double XArrayOffset { get { return xArrayOffset; } set { xArrayOffset = value; } }
-        double yArrayOffset; public double YArrayOffset { get { return yArrayOffset; } set { yArrayOffset = value; } }
+        double xPlacement; public double XPlacement { get { return xPlacement; } set { xPlacement = value; } }
+        double yPlacement; public double YPlacement { get { return yPlacement; } set { yPlacement = value; } }
 
         public NCFileMerger(string filename)
             : base(filename)
@@ -26,6 +26,8 @@ namespace Postpostprocessing
         /// </summary>
         public void FindMinMaxValues()
         {
+            bool xSet = false;
+            bool ySet = false;
             int i = 0;
             while (i < lines.Length)
             {
@@ -85,9 +87,21 @@ namespace Postpostprocessing
             return value;
         }
 
-        public double GetXLength() { return xMax - xMin; }
-        public double GetYLength() { return yMax - yMin; }
+        /// <summary>
+        /// Returns the difference between the smallest and largest X value of the file
+        /// </summary>
+        /// <returns></returns>
+        public double GetXLength() { return (xMax - xMin); }
+        /// <summary>
+        /// Returns the difference between the smallest and largest Y value of the file
+        /// </summary>
+        /// <returns></returns>
+        public double GetYLength() { return (yMax - yMin); }
 
+        /// <summary>
+        /// rotates the entire file around the z axis
+        /// </summary>
+        /// <param name="r">l = 90 degrees left, r = 90 degrees to the right and t=180 degrees turn</param>
         public void Rotate(char r)
         {
             //r values: l=turn 90 degree's left, r=turn 90 degree's right, t=turn 180 degrees
@@ -129,6 +143,7 @@ namespace Postpostprocessing
                         if (line.Contains("G03")) newline = newline + " G03";
                         if (newX.Contains("Y")) { string temp = newX; newX = newY; newY = temp; } //sorts newX and newY, so the x value will always come first
                         newline = newline + newX + newY;
+                        if (line.Contains("Z")) newline += " Z" + DoubleToString(GetValue(line, 'Z'));
                         if (line.Contains("A"))
                         {
                             double a = GetValue(line, 'A');
@@ -144,11 +159,42 @@ namespace Postpostprocessing
                         }
                         if (line.Contains("R")) newline = newline + " R" + DoubleToString(GetValue(line, 'R'));
                         if (line.Contains("F")) newline = newline + " F" + DoubleToString(GetValue(line, 'F'));
+                        UpdateLine(i, newline);
                     }
                 }
                 i++;
             }
+            FindMinMaxValues();
         }
+
+        /// <summary>
+        /// returns the actual X/Y coordinates with offsets and placements
+        /// </summary>
+        /// <param name="i">the line you want returned</param>
+        /// <returns></returns>
+        public string ReturnActualXYZ(int i)
+        {
+            string line = GetCode(i);
+            if (line.Contains("X"))
+            {
+                string start = line.Substring(0, line.IndexOf("X")+1);
+                line = line.Substring(line.IndexOf("X"));
+                double x = GetValue(line, 'X'); x = x - xOffset + xPlacement; 
+                if (line.IndexOf(" ") > -1) line = line.Substring(line.IndexOf(" "));
+                line = start + DoubleToString(x) + line;
+            }
+            if (line.Contains("Y"))
+            {
+                string start = line.Substring(0, line.IndexOf("Y")+1);
+                line = line.Substring(line.IndexOf("Y"));
+                double y = GetValue(line, 'Y'); y = y - yOffset + yPlacement;
+                if (line.IndexOf(" ") > -1) line = line.Substring(line.IndexOf(" "));
+                else line = "";
+                line = start + DoubleToString(y) + line;
+            }
+            return line;
+        }
+
 
     }
 }
