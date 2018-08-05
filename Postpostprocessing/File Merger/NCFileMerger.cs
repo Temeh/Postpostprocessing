@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Globalization;
 
 namespace Postpostprocessing
 {
@@ -83,7 +84,7 @@ namespace Postpostprocessing
             line = line.Substring(line.IndexOf(c) + 1);
             double value;
             if (line.IndexOf(" ") != -1) line = line.Substring(0, line.IndexOf(" "));
-            value = double.Parse(line);
+            value = double.Parse(line, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"));
             return value;
         }
 
@@ -179,8 +180,9 @@ namespace Postpostprocessing
             {
                 string start = line.Substring(0, line.IndexOf("X")+1);
                 line = line.Substring(line.IndexOf("X"));
-                double x = GetValue(line, 'X'); x = x - xOffset + xPlacement; 
+                double x = GetValue(line, 'X'); x = x - xOffset + xPlacement;
                 if (line.IndexOf(" ") > -1) line = line.Substring(line.IndexOf(" "));
+                else line = "";
                 line = start + DoubleToString(x) + line;
             }
             if (line.Contains("Y"))

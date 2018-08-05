@@ -10,7 +10,7 @@ namespace Postpostprocessing
     /// <summary>
     /// Updates the G code to prevent the knife form entering the material before it has turned to face the correct direction
     /// </summary>
-    class KnifeDirection
+    class KnifeDirection :GCodeReader
     {
         NCFile file;
 
@@ -34,9 +34,9 @@ namespace Postpostprocessing
             bool knifeActive = false;
             bool rapidMovement = false;
             bool foundEntryPoint = false;
-            double[][] whereAmINow = new double[5][]; //[][0]=X, [][1]=Y, [][2]=Z, [][3]=F, [][4]=A
-            double[] startPoint = new double[5]; //0=X, 1=Y, 2=Z, 3=F
-            double[] entryPoint = new double[5]; //0=X, 1=Y, 2=Z, 3=F 
+            double[][] whereAmINow = new double[5][]; //[][0]=X, [][1]=Y, [][2]=Z, [][3]=F, [][4]=A, [][5]=R, [][6]=movement type
+            //double[] startPoint = new double[5]; //0=X, 1=Y, 2=Z, 3=F, 4=A, 5=R, 6=movement type
+            //double[] entryPoint = new double[5]; //0=X, 1=Y, 2=Z, 3=F, 4=A, 5=R, 6=movement type
             int locationInFile = -1; // line# in the file, of the entry point
             int i = 0;
             while (i < file.AmountLines())
@@ -55,13 +55,14 @@ namespace Postpostprocessing
                         }
                     }
 
+
                     if (knifeActive)
                     {
-                        whereAmINow = GetLocation(line, whereAmINow);
+                        whereAmINow = GetLocation(line, whereAmINow, i);
                         if (line.StartsWith("G00") && !foundEntryPoint)
                         {
                             rapidMovement = true;
-                            Array.Copy(whereAmINow[0], startPoint, whereAmINow[0].Length);
+                            //Array.Copy(whereAmINow[0], startPoint, whereAmINow[0].Length);
                         }
                     }
                     else { i++; continue; }
@@ -70,7 +71,7 @@ namespace Postpostprocessing
                     {
                         if (line.Contains("X") || line.Contains("Y"))
                         {
-                            Array.Copy(whereAmINow[0], entryPoint, whereAmINow[0].Length);
+                            //Array.Copy(whereAmINow[0], entryPoint, whereAmINow[0].Length);
                             foundEntryPoint = true;
                             rapidMovement = false; locationInFile = i;
                             i++; continue;
@@ -81,10 +82,9 @@ namespace Postpostprocessing
                     {
                         if (line.Contains("X") || line.Contains("Y"))
                         {
-                            double[] nextPoint = new double[whereAmINow[0].Length];
-                            Array.Copy(whereAmINow[0], nextPoint, whereAmINow[0].Length);
+                            //  double[] nextPoint = new double[whereAmINow[0].Length];
+                            //  Array.Copy(whereAmINow[0], nextPoint, whereAmINow[0].Length);
                             InsertKnifeTurning(whereAmINow, locationInFile);
-                            //InsertNewPoint(entryPoint, nextPoint, locationInFile);
                             foundEntryPoint = false;
                         }
                     }
@@ -93,7 +93,6 @@ namespace Postpostprocessing
             }
             return file;
         }
-
 
         /// <summary>
         /// changes the new x/y to be a point .1mm away from the original location, away from the next location, to force the knife to turn the right direction before entering the material
@@ -135,31 +134,87 @@ namespace Postpostprocessing
             file.UpdateLine(i, line);
         }
 
+        /// <summary>
+        /// Changes G00 movement to G02/G03 to make the knife arrive, facing the correct destination
+        /// </summary>
+        /// <param name="whereAmINow">array holding points around the current location</param>
+        /// <param name="i"></param>
         void InsertKnifeTurning(double[][] whereAmINow, int i)
         {
-
-            if (whereAmINow[2] == null || file.CheckDistance(whereAmINow[1], whereAmINow[2]) > double.Parse(ConfigurationManager.AppSettings["minDistForRapidMove"]))
+            /*
+            if (whereAmINow[2] == null || // if we dont know where we are coming from, we fix the knife direction when it arrives at insertion point.
+                file.CheckDistance(whereAmINow[1], whereAmINow[2]) > double.Parse(ConfigurationManager.AppSettings["minDistForRapidMove"]))
             {
                 InsertNewPoint(whereAmINow[1], whereAmINow[0], i);
+                return;
             }
-            else
+             */
+            double newAngle;
+
+            if (whereAmINow[0][4] >= 0) // detects starting direction of a knife if its inserted into an arc
             {
-                double newAngle = file.CheckDirection(whereAmINow[1], whereAmINow[0]);
-                double oldAngle = file.CheckDirection(whereAmINow[3], whereAmINow[2]);
+                newAngle = DetectDirectioninArc(whereAmINow);
+            }
+            else // detects starting direction if knife is inserted on a straight line
+            {
+                newAngle = file.CheckDirection(whereAmINow[1], whereAmINow[0]);
+            }
+
+            double oldAngle; string turnDirection;
+            if (!(whereAmINow[3] == null))
+            {
+                oldAngle = file.CheckDirection(whereAmINow[3], whereAmINow[2]);
                 double degreesTurned = oldAngle - newAngle;
+
                 if (degreesTurned < 0) degreesTurned = degreesTurned + 360;
-                string turnDirection;
                 if (degreesTurned < 180) turnDirection = "G02";
                 else turnDirection = "G03";
-
-                newAngle = Math.Round(newAngle, 3);
-                NumberFormatInfo nfi = new NumberFormatInfo();
-                nfi.NumberDecimalSeparator = ".";
-                string line = "N" + file.GetLineBlock(i) + " " + turnDirection.ToString(nfi) + " X" + file.DoubleToString(whereAmINow[1][0]);
-                line = line + " Y" + file.DoubleToString(whereAmINow[1][1]) + " F" + ConfigurationManager.AppSettings["aboveMaterialRadiusSpeed"] + " A" + file.DoubleToString(newAngle) + " R" + ConfigurationManager.AppSettings["radiusAboveMaterial"];
-                line = line + "\r\nN" + (file.GetLineBlock(i) + 1) + " F2000.";
-                file.UpdateLine(i, line);
             }
+            else turnDirection = "G02";
+
+            newAngle = Math.Round(newAngle, 3);
+            NumberFormatInfo nfi = new NumberFormatInfo();
+            nfi.NumberDecimalSeparator = ".";
+            string line = "N" + file.GetLineBlock(i) + " " + turnDirection.ToString(nfi) + " X" + file.DoubleToString(whereAmINow[1][0]);
+            line = line + " Y" + file.DoubleToString(whereAmINow[1][1]) + " F" +
+                ConfigurationManager.AppSettings["aboveMaterialRadiusSpeed"] + " A" + file.DoubleToString(newAngle) + " R" + ConfigurationManager.AppSettings["radiusAboveMaterial"];
+            line = line + "\r\nN" + (file.GetLineBlock(i) + 1) + " F2000.";
+            file.UpdateLine(i, line);
+        }
+
+        /// <summary>
+        /// Detects the start direction of an arc
+        /// </summary>
+        /// <param name="whereAmINow">array of arrays holding the most recent points</param>
+        /// <returns></returns>
+        double DetectDirectioninArc(double[][] whereAmINow)
+        {
+            //right triangle stuff
+            double destinationAngle = whereAmINow[0][4]; double directionofArcCenter;
+            if (whereAmINow[0][6] == 2) directionofArcCenter = destinationAngle - 90;  //turn clockwise
+            else directionofArcCenter = destinationAngle + 90;  //Turn counter clockwise
+            //holds position of the center of the arc, relative to the end point
+            double angle = 0;
+            {   //Finds cosV
+                if (directionofArcCenter <= 90) angle = 90 - directionofArcCenter;
+                else if (directionofArcCenter <= 180) angle = directionofArcCenter - 90;
+                else if (directionofArcCenter <= 270) angle = 270 - directionofArcCenter;
+                else if (directionofArcCenter <= 360) angle = directionofArcCenter - 270;
+                angle = angle * (Math.PI / 180); 
+                double t = Math.Sin(angle);
+            }
+            double xArcCenter = Math.Abs(Math.Sin(angle) * whereAmINow[0][5]);
+            double yArcCenter = Math.Abs(Math.Cos(angle) * whereAmINow[0][5]);
+            if (directionofArcCenter > 180) yArcCenter = -yArcCenter;
+            if (directionofArcCenter > 90 && directionofArcCenter < 270) xArcCenter = -xArcCenter;
+            xArcCenter += whereAmINow[0][0]; yArcCenter += whereAmINow[0][1];
+            double[] s = new double[2] { xArcCenter, yArcCenter };
+            destinationAngle = file.CheckDirection(s, whereAmINow[1]);
+            if (whereAmINow[0][6] == 2) destinationAngle -= 90;
+            else destinationAngle += 90;
+            if (destinationAngle < 0) destinationAngle += 360;
+            else if (destinationAngle > 360) destinationAngle -= 360;
+            return destinationAngle;                   
         }
 
         /// <summary>
@@ -182,63 +237,6 @@ namespace Postpostprocessing
             }
             else return knifeActive;
         }
-        /// <summary>
-        /// Updates the coordinate array with new locations in the string(if any)
-        /// </summary>
-        /// <param name="subline">the string you want to check</param>
-        /// <param name="c">array of current coordinates</param>
-        /// <returns>returns the coordinate array taken as input with updated values</returns>
-        double[][] GetLocation(string line, double[][] whereAmINow)
-        {
-            if (line.Contains("X") || line.Contains("Y"))
-            {
-                if (!(whereAmINow[3] == null)) whereAmINow[4] = whereAmINow[3].Clone() as double[];
-                if (!(whereAmINow[2] == null)) whereAmINow[3] = whereAmINow[2].Clone() as double[];
-                if (!(whereAmINow[1] == null)) whereAmINow[2] = whereAmINow[1].Clone() as double[];
-                if (!(whereAmINow[0] == null)) whereAmINow[1] = whereAmINow[0].Clone() as double[];
-                if (whereAmINow[0] == null) whereAmINow[0] = new double[5];
-            }
-            double value;
-            if (line.Contains("X"))
-            {
-                string subline = line.Substring(line.IndexOf("X") + 1);
-                if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
-                double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[0][0] = value;
-            }
-            if (line.Contains("Y"))
-            {
-                string subline = line.Substring(line.IndexOf("Y") + 1);
-                if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
-                double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[0][1] = value;
-            }
-            /*
-            if (line.Contains("Z"))
-            {
-                string subline = line.Substring(line.IndexOf("Z") + 1);
-                if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
-                double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[0][2] = value;
-            }
-            if (line.Contains("F"))
-            {
-                string subline = line.Substring(line.IndexOf("F") + 1);
-                if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
-                double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[0][3] = value;
-            }
-             */
-            if (line.Contains("A") && (line.Contains("X") || line.Contains("Y")))
-            {
-                string subline = line.Substring(line.IndexOf("A") + 1);
-                if (subline.IndexOf(" ") != -1) subline = subline.Substring(0, subline.IndexOf(" "));
-                double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
-                whereAmINow[0][4] = value;
 
-            }
-            else if (line.Contains("X") || line.Contains("Y")) whereAmINow[0][4] = -1;
-            return whereAmINow;
-        }
     }
 }

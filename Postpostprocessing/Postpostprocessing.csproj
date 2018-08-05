@@ -48,6 +48,8 @@
     <Compile Include="File Merger\FileMerger.cs" />
     <Compile Include="File Merger\NCFileMerger.cs" />
     <Compile Include="File Merger\FileArray.cs" />
+    <Compile Include="G-code processing\LongArcFixer.cs" />
+    <Compile Include="Shared Classes\GCodeReader.cs" />
     <Compile Include="Shared Classes\NCFile.cs" />
     <Compile Include="G-code processing\CheckXYZ.cs" />
     <Compile Include="G-code processing\FileManager.cs" />

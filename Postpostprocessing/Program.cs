@@ -30,7 +30,6 @@ namespace Postpostprocessing
                     }
                 }
             }
-            Console.WriteLine("stop program!");
             ProcessingManager pm = new ProcessingManager();
         }
     }
