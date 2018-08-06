@@ -189,10 +189,17 @@ namespace Postpostprocessing
         /// <returns></returns>
         double DetectDirectioninArc(double[][] whereAmINow)
         {
-            //right triangle stuff
             double destinationAngle = whereAmINow[0][4]; double directionofArcCenter;
-            if (whereAmINow[0][6] == 2) directionofArcCenter = destinationAngle - 90;  //turn clockwise
-            else directionofArcCenter = destinationAngle + 90;  //Turn counter clockwise
+            if (whereAmINow[0][6] == 2)  //turn clockwise
+            {
+                directionofArcCenter = destinationAngle - 90;
+                if (directionofArcCenter < 0) directionofArcCenter += 360;
+            }
+            else  //Turn counter clockwise
+            {
+                directionofArcCenter = destinationAngle + 90;
+                if (directionofArcCenter >= 360) directionofArcCenter -= 360;
+            }
             //holds position of the center of the arc, relative to the end point
             double angle = 0;
             {   //Finds cosV
