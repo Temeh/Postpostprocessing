@@ -24,6 +24,7 @@ namespace Postpostprocessing
             NCFile[] files = fm.Files;
 
             KnifeHomeing kh = new KnifeHomeing(files);
+            LongArcFixer laf = new LongArcFixer(files);
             KnifeDirection kd = new KnifeDirection(files);
             CheckXYZ checkXYZ = new CheckXYZ(files);
             Console.WriteLine("Checks and modifications complete!");

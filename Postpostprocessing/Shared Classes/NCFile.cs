@@ -64,6 +64,14 @@ namespace Postpostprocessing
         }
 
         /// <summary>
+        /// Merges all lines and splits them again, so that lines that have been modified to have a linebreak will be properly registered as different lines
+        /// </summary>
+        public void RebuildLines()
+        {
+            SplitString(CombineLines());
+        }
+
+        /// <summary>
         /// Splits a string into one string for each linebreak
         /// </summary>
         /// <param name="text">the string you want to split</param>
@@ -191,7 +199,6 @@ namespace Postpostprocessing
         public void AddNewLine(int i, string newline)
         {
             lines[i] = lines[i] + "\r\n" + newline;
-            //   SplitString(CombineLines());
         }
 
         /// <summary>

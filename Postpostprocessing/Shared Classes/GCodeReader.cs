@@ -32,6 +32,7 @@ namespace Postpostprocessing
                 if (!(whereAmINow[0] == null)) whereAmINow[1] = whereAmINow[0].Clone() as double[];
                 if (whereAmINow[0] == null) whereAmINow[0] = new double[8];
                 //[][0]=X, [][1]=Y, [][2]=Z, [][3]=F, [][4]=A, [][5]=R, [][6]=movement type, [][7], line number in the file
+                whereAmINow[0][7] = lineNumber;
             }
             double value;
             if (line.Contains("X"))

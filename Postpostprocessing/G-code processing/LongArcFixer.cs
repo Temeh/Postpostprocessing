@@ -18,8 +18,10 @@ namespace Postpostprocessing
             while (i < files.Length)
             {
                 if (!files[i].PreviousPPP)
+                {
                     file = files[i];
-                file = DetectLongArc(file);
+                    file = DetectLongArc(file);
+                }
                 i++;
             }
         }
@@ -55,28 +57,44 @@ namespace Postpostprocessing
 
                             if (changed > 179)
                             {
+                                double x = d[0]; double y = d[1];
                                 if (whereAmINow[0][6] == 2)
                                 {   // turn clockwise
-                                    double newAngle; double x=d[0]; double y=d[1];
-                                    if (startA < 90) { newAngle = 0; y += whereAmINow[0][5]; }
-                                    else if (startA < 180) { newAngle = 90; x -= whereAmINow[0][5]; }
-                                    else if (startA < 270) { newAngle = 180; y -= whereAmINow[0][5]; }
+                                    double newAngle;
+                                    if (startA <= 90) { newAngle = 0; y += whereAmINow[0][5]; }
+                                    else if (startA <= 180) { newAngle = 90; x -= whereAmINow[0][5]; }
+                                    else if (startA <= 270) { newAngle = 180; y -= whereAmINow[0][5]; }
                                     else { newAngle = 270; x += whereAmINow[0][5]; }
-                                    newLine = newLine+"\n"+"N" + blockNumber + " X" + file.DoubleToString(d[0]) + " Y" + file.DoubleToString(d[1]) + " A" + file.DoubleToString(newAngle) +
-                                        " R" + file.DoubleToString(whereAmINow[0][5]) +"\n";
+                                    newLine = newLine + "N" + blockNumber + blockNumber + " G0" + Convert.ToInt32(whereAmINow[0][6]) + " X" + file.DoubleToString(x) + " Y" +
+                                        file.DoubleToString(y) + " A" + file.DoubleToString(newAngle) + " R" + file.DoubleToString(whereAmINow[0][5]) + "\n";
                                     blockNumber++; changed -= 90;
+                                    startA = newAngle;
                                 }
                                 else
                                 {   // turn counter clockwise
-
+                                    double newAngle;
+                                    if (startA >= 270) { newAngle = 0; y -= whereAmINow[0][5]; }
+                                    else if (startA >= 180) { newAngle = 270; x -= whereAmINow[0][5]; }
+                                    else if (startA >= 90) { newAngle = 180; y += whereAmINow[0][5]; }
+                                    else { newAngle = 90; x += whereAmINow[0][5]; }
+                                    newLine = newLine + "N" + blockNumber + " G0" + Convert.ToInt32(whereAmINow[0][6]) + " X" + file.DoubleToString(x) + " Y" +
+                                        file.DoubleToString(y) + " A" + file.DoubleToString(newAngle) + " R" + file.DoubleToString(whereAmINow[0][5]) + "\n";
+                                    blockNumber++; changed -= 90;
+                                    startA = newAngle;
                                 }
                             }
-                            else break;
+                            else
+                            {
+                                newLine = newLine + file.GetLine(i);
+                                file.UpdateLine(i, newLine);
+                                break;
+                            }
                         }
                     }
                 }
                 i++;
             }
+            file.RebuildLines();
             return file;
         }
 
