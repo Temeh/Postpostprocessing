@@ -37,7 +37,7 @@ namespace Postpostprocessing
                     whereAmINow = GetLocation(line, whereAmINow, i);
                     if (line.Contains("A"))
                     {
-                        double startA = DetectStartingDirectionOfArc(whereAmINow);
+                        double startA = SharedMethods.DetectStartingDirectionOfArc(whereAmINow);
                         double endA = GetValue(line, 'A');
                         double changed;
                         if (whereAmINow[0][6] == 2)
@@ -50,46 +50,47 @@ namespace Postpostprocessing
                             changed = endA - startA;
                             if (changed < 0) changed = endA + (360 - startA);
                         }
-                        string newLine = ""; int blockNumber = file.GetLineBlock(i - 1); blockNumber++;
-                        double[] d = DetectArcSenter(whereAmINow);//[0]=x, [1]=y
-                        while (true)
-                        {
+                        string newLine = ""; int blockNumber = file.GetLineBlock(i);
+                        if (changed > 359) { blockNumber -= 3; } //      changes starting block number to correspond to amount of new lines being added 
+                        else if (changed > 269) { blockNumber -= 2; }//  infront of the line being examined
+                        else if (changed > 179) { blockNumber -= 1; }
 
-                            if (changed > 179)
+                        double[] d = SharedMethods.DetectArcSenter(whereAmINow);//[0]=x, [1]=y
+                        if (changed > 179) while (true)
                             {
-                                double x = d[0]; double y = d[1];
-                                if (whereAmINow[0][6] == 2)
-                                {   // turn clockwise
-                                    double newAngle;
-                                    if (startA <= 90) { newAngle = 0; y += whereAmINow[0][5]; }
-                                    else if (startA <= 180) { newAngle = 90; x -= whereAmINow[0][5]; }
-                                    else if (startA <= 270) { newAngle = 180; y -= whereAmINow[0][5]; }
-                                    else { newAngle = 270; x += whereAmINow[0][5]; }
-                                    newLine = newLine + "N" + blockNumber + blockNumber + " G0" + Convert.ToInt32(whereAmINow[0][6]) + " X" + file.DoubleToString(x) + " Y" +
-                                        file.DoubleToString(y) + " A" + file.DoubleToString(newAngle) + " R" + file.DoubleToString(whereAmINow[0][5]) + "\n";
+                                if (changed > 179)
+                                {
+                                    double x = d[0]; double y = d[1]; double newAngle;
+                                    if (whereAmINow[0][6] == 2)
+                                    {   // turn clockwise
+                                        if (startA <= 90) { newAngle = 0; y += whereAmINow[0][5]; }
+                                        else if (startA <= 180) { newAngle = 90; x -= whereAmINow[0][5]; }
+                                        else if (startA <= 270) { newAngle = 180; y -= whereAmINow[0][5]; }
+                                        else { newAngle = 270; x += whereAmINow[0][5]; }
+                                    }
+                                    else
+                                    {   // turn counter clockwise
+                                        if (startA >= 270) { newAngle = 0; y -= whereAmINow[0][5]; }
+                                        else if (startA >= 180) { newAngle = 270; x -= whereAmINow[0][5]; }
+                                        else if (startA >= 90) { newAngle = 180; y += whereAmINow[0][5]; }
+                                        else { newAngle = 90; x += whereAmINow[0][5]; }
+                                    }
+                                    newLine = newLine + "N" + blockNumber + " G0" + Convert.ToInt32(whereAmINow[0][6]) + " X" + file.DoubleToString(x) + " Y" +
+                                        file.DoubleToString(y) + " A" + file.DoubleToString(newAngle) + " R" + file.DoubleToString(whereAmINow[0][5]);
+                                    if (!newLine.Contains("F")) newLine = newLine + " F" + file.DoubleToString(whereAmINow[0][3]);
+                                    newLine = newLine + "\n";
                                     blockNumber++; changed -= 90;
                                     startA = newAngle;
                                 }
                                 else
-                                {   // turn counter clockwise
-                                    double newAngle;
-                                    if (startA >= 270) { newAngle = 0; y -= whereAmINow[0][5]; }
-                                    else if (startA >= 180) { newAngle = 270; x -= whereAmINow[0][5]; }
-                                    else if (startA >= 90) { newAngle = 180; y += whereAmINow[0][5]; }
-                                    else { newAngle = 90; x += whereAmINow[0][5]; }
-                                    newLine = newLine + "N" + blockNumber + " G0" + Convert.ToInt32(whereAmINow[0][6]) + " X" + file.DoubleToString(x) + " Y" +
-                                        file.DoubleToString(y) + " A" + file.DoubleToString(newAngle) + " R" + file.DoubleToString(whereAmINow[0][5]) + "\n";
-                                    blockNumber++; changed -= 90;
-                                    startA = newAngle;
+                                {
+                                    string oldLine = "N" + Convert.ToString(file.GetLineBlock(i)) + " X" + file.DoubleToString(whereAmINow[0][0]) + " Y" + file.DoubleToString(whereAmINow[0][1])
+                                        + " A" + file.DoubleToString(whereAmINow[0][4]) + " R" + file.DoubleToString(whereAmINow[0][5]);
+                                    newLine = newLine + oldLine;
+                                    file.UpdateLine(i, newLine);
+                                    break;
                                 }
                             }
-                            else
-                            {
-                                newLine = newLine + file.GetLine(i);
-                                file.UpdateLine(i, newLine);
-                                break;
-                            }
-                        }
                     }
                 }
                 i++;
@@ -98,72 +99,6 @@ namespace Postpostprocessing
             return file;
         }
 
-        /// <summary>
-        /// Detects the start direction of an arc
-        /// </summary>
-        /// <param name="whereAmINow">array of arrays holding the most recent points</param>
-        /// <returns></returns>
-        double DetectStartingDirectionOfArc(double[][] whereAmINow)
-        {
-            /*
-            //right triangle stuff
-            double destinationAngle = whereAmINow[0][4]; double directionofArcCenter;
-            if (whereAmINow[0][6] == 2) directionofArcCenter = destinationAngle - 90;  //turn clockwise
-            else directionofArcCenter = destinationAngle + 90;  //Turn counter clockwise
-            //holds position of the center of the arc, relative to the end point
-            double angle = 0;
-            {   //Finds cosV
-                if (directionofArcCenter <= 90) angle = 90 - directionofArcCenter;
-                else if (directionofArcCenter <= 180) angle = directionofArcCenter - 90;
-                else if (directionofArcCenter <= 270) angle = 270 - directionofArcCenter;
-                else if (directionofArcCenter <= 360) angle = directionofArcCenter - 270;
-                angle = angle * (Math.PI / 180);
-                double t = Math.Sin(angle);
-            }
-            double xArcCenter = Math.Abs(Math.Sin(angle) * whereAmINow[0][5]);
-            double yArcCenter = Math.Abs(Math.Cos(angle) * whereAmINow[0][5]);
-            if (directionofArcCenter > 180) yArcCenter = -yArcCenter;
-            if (directionofArcCenter > 90 && directionofArcCenter < 270) xArcCenter = -xArcCenter;
-            xArcCenter += whereAmINow[0][0]; yArcCenter += whereAmINow[0][1];
-            double[] s = new double[2] { xArcCenter, yArcCenter };*/
-            double[] s = DetectArcSenter(whereAmINow);
-            double destinationAngle = file.CheckDirection(s, whereAmINow[1]);
-            if (whereAmINow[0][6] == 2) destinationAngle -= 90;
-            else destinationAngle += 90;
-            if (destinationAngle < 0) destinationAngle += 360;
-            else if (destinationAngle > 360) destinationAngle -= 360;
-            return destinationAngle;
-        }
 
-        /// <summary>
-        /// Finds the center of an arc
-        /// </summary>
-        /// <param name="whereAmINow">array that holds the locations of the last few point</param>
-        /// <returns></returns>
-        double[] DetectArcSenter(double[][] whereAmINow)
-        {
-
-            //right triangle stuff
-            double destinationAngle = whereAmINow[0][4]; double directionofArcCenter;
-            if (whereAmINow[0][6] == 2) directionofArcCenter = destinationAngle - 90;  //turn clockwise
-            else directionofArcCenter = destinationAngle + 90;  //Turn counter clockwise
-            //holds position of the center of the arc, relative to the end point
-            double angle = 0;
-            {   //Finds cosV
-                if (directionofArcCenter <= 90) angle = 90 - directionofArcCenter;
-                else if (directionofArcCenter <= 180) angle = directionofArcCenter - 90;
-                else if (directionofArcCenter <= 270) angle = 270 - directionofArcCenter;
-                else if (directionofArcCenter <= 360) angle = directionofArcCenter - 270;
-                angle = angle * (Math.PI / 180);
-                double t = Math.Sin(angle);
-            }
-            double xArcCenter = Math.Abs(Math.Sin(angle) * whereAmINow[0][5]);
-            double yArcCenter = Math.Abs(Math.Cos(angle) * whereAmINow[0][5]);
-            if (directionofArcCenter > 180) yArcCenter = -yArcCenter;
-            if (directionofArcCenter > 90 && directionofArcCenter < 270) xArcCenter = -xArcCenter;
-            xArcCenter += whereAmINow[0][0]; yArcCenter += whereAmINow[0][1];
-            double[] center = new double[] { xArcCenter, yArcCenter };
-            return center;
-        }
     }
 }

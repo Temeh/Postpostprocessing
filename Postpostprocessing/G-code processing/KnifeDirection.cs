@@ -157,13 +157,13 @@ namespace Postpostprocessing
             }
             else // detects starting direction if knife is inserted on a straight line
             {
-                newAngle = file.CheckDirection(whereAmINow[1], whereAmINow[0]);
+                newAngle =SharedMethods.CheckDirection(whereAmINow[1], whereAmINow[0]);
             }
 
             double oldAngle; string turnDirection;
             if (!(whereAmINow[3] == null))
             {
-                oldAngle = file.CheckDirection(whereAmINow[3], whereAmINow[2]);
+                oldAngle = SharedMethods.CheckDirection(whereAmINow[3], whereAmINow[2]);
                 double degreesTurned = oldAngle - newAngle;
 
                 if (degreesTurned < 0) degreesTurned = degreesTurned + 360;
@@ -216,7 +216,7 @@ namespace Postpostprocessing
             if (directionofArcCenter > 90 && directionofArcCenter < 270) xArcCenter = -xArcCenter;
             xArcCenter += whereAmINow[0][0]; yArcCenter += whereAmINow[0][1];
             double[] s = new double[2] { xArcCenter, yArcCenter };
-            destinationAngle = file.CheckDirection(s, whereAmINow[1]);
+            destinationAngle =SharedMethods.CheckDirection(s, whereAmINow[1]);
             if (whereAmINow[0][6] == 2) destinationAngle -= 90;
             else destinationAngle += 90;
             if (destinationAngle < 0) destinationAngle += 360;

@@ -57,6 +57,7 @@ namespace Postpostprocessing
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
                 whereAmINow[0][2] = value;
             }
+             */
             if (line.Contains("F"))
             {
                 string subline = line.Substring(line.IndexOf("F") + 1);
@@ -64,7 +65,7 @@ namespace Postpostprocessing
                 double.TryParse(subline, NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingSign, CultureInfo.GetCultureInfo("en-US"), out value);
                 whereAmINow[0][3] = value;
             }
-             */
+
             if (line.Contains("A") && (line.Contains("X") || line.Contains("Y")))
             {
                 string subline = line.Substring(line.IndexOf("A") + 1);

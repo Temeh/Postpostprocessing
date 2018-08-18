@@ -217,33 +217,7 @@ namespace Postpostprocessing
             return length;
         }
 
-        /// <summary>
-        /// takes a string of doubles with coordinates of start x/y and end x/y and checks what direction  movement is happening in
-        /// </summary>
-        /// <param name="start">start location</param>
-        /// <param name="end">end location</param>
-        /// <returns>the angle</returns>
-        public double CheckDirection(double[] start, double[] end)
-        {
-            double x = end[0] - start[0];
-            double y = end[1] - start[1];
-            double hypotenus = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
-            double angle = -1;
-            if (x == 0 || y == 0)
-            {
-                if (x > 0) angle = 0;
-                else if (x < 0) angle = 180;
-                else if (y > 0) angle = 90;
-                else if (y < 0) angle = 270;
-            }
-            else
-            {
-                angle = Math.Acos((x / hypotenus)) * 180 / Math.PI;
-                if (y < 0) angle = 360 - angle;
-                angle = Math.Round(angle, 3);
-            }
-            return angle;
-        }
+
 
         /// <summary>
         /// Takes a double and converts it to a string with upto 3 decimals, and always having a decimal separator even if double is a whole number.
