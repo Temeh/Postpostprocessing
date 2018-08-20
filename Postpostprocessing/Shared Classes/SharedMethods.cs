@@ -57,6 +57,7 @@ namespace Postpostprocessing
             if (whereAmINow[0][6] == 2) directionofArcCenter = destinationAngle - 90;  //turn clockwise
             else directionofArcCenter = destinationAngle + 90;  //Turn counter clockwise
             if (directionofArcCenter < 0) directionofArcCenter += 360;
+            else if (directionofArcCenter > 360) directionofArcCenter -= 360;
 
             //finds the angle towards the center relative to the angle of the y-axis
             double angle = 0;
