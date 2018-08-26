@@ -52,8 +52,11 @@ namespace Postpostprocessing
             //the actual console
             ListFiles();
             array = new FileArray();
+            Console.WriteLine("Starting filemerger...");
             while (true)
             {
+                Console.WriteLine("\"h\" for Help, \"r\" to restart merger process, \"a\" add files to array, \"i\" for info about the array" + "\n"
+                    + "\"s\" to save files, \"e\" to exit the filemerger.");
                 ConsoleKeyInfo c = Console.ReadKey(true);
                 if (c.KeyChar == 'h') Help();
                 if (c.KeyChar == 'r') Restart();

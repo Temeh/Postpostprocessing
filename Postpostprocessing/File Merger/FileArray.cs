@@ -348,12 +348,13 @@ namespace Postpostprocessing
         /// <returns></returns>
         public string ReturnTool(int cb)
         {
-            codeBlock = cb + 5; string tool; string newline = "\n";
+            codeBlock = cb + 5; string tool; string newline = "\n"; int i = 0;
             tool = "N" + codeBlock + " T" + toolID + " M06" + newline; codeBlock += 5;
             tool = tool + "N" + codeBlock + " " + toolStart + newline; codeBlock += 5;
             tool = tool + "N" + codeBlock + " " + toolOffset + newline; codeBlock += 5;
+            tool = tool + "N" + codeBlock + " " + Gcode[i] + newline; codeBlock += 5; i++;
             tool = tool + "N" + codeBlock + " " + toolHeightOffset + newline; codeBlock += 5;
-            int i = 0;
+            
             while (i < Gcode.Count)
             {
                 tool = tool + "N" + codeBlock + " " + Gcode[i] + newline; codeBlock += 5;

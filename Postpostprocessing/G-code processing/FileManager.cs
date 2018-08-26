@@ -17,43 +17,88 @@ namespace Postpostprocessing
         public FileManager()
         {
             Console.WriteLine("Finding files...");
-            String[] fileList = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.nc");
-            Console.WriteLine("Found " + fileList.Length + " .nc files:");
+            String[] fl = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.nc");
+            List<string> fileList = new List<string>();
             int i = 0;
-            while (i < fileList.Length)
+            while (i < fl.Length)
             {
-                fileList[i] = Path.GetFileName(fileList[i]);
-                Console.WriteLine("   " + fileList[i]);
+                string s = Path.GetFileNameWithoutExtension(fl[i]);
+                int number;
+                if (int.TryParse(s, out number))
+                {
+                    if (number < 2000) fileList.Add(fl[i]);
+                }
                 i++;
             }
-            files = new NCFile[fileList.Length];
-            i = 0;
-            while (i < fileList.Length)
+
+            if (fileList.Count > 0)
             {
-                files[i] = new NCFile(fileList[i]);
-                i++;
+                Console.WriteLine("Found " + fileList.Count + " .nc files:");
+                i = 0;
+                while (i < fileList.Count)
+                {
+                    fileList[i] = Path.GetFileName(fileList[i]);
+                    Console.Write(fileList[i] + ", ");
+                    i++;
+                }
+                Console.WriteLine();
+                files = new NCFile[fileList.Count];
+                i = 0;
+                while (i < fileList.Count)
+                {
+                    files[i] = new NCFile(fileList[i]);
+                    i++;
+                }
             }
         }
 
         public void SaveFile()
         {
-            int i = 0;
+            int i = 0; List<string> alreadyChecked = new List<string>();
+            Console.Write("Saving file(s)");
             while (i < files.Length)
             {
                 if (!files[i].PreviousPPP)
                 {
-                    Console.WriteLine("..Saving " + files[i].Filename);
+                    Console.Write(", " + files[i].Filename);
                     File.WriteAllText(files[i].Filename, files[i].CombineLines());
                 }
-                else Console.WriteLine(files[i].Filename + " was already checked and will not be updated");
+                else
+                {
+                    alreadyChecked.Add(files[i].Filename);
+                }
                 i++;
             }
+            Console.WriteLine();
+
+            if (alreadyChecked.Count > 0)
+            {
+                i = 0;
+                while (i < alreadyChecked.Count)
+                {
+                    Console.WriteLine(alreadyChecked[i] + " was already checked and will not be updated");
+                    i++;
+                }
+            }
+            if (files.Length > 0) Console.WriteLine("Saved all files");
         }
 
         public void CopyFile()
         {
             int i = 0;
-            while (i < files.Length)
+
+            while (true) //Checks that the target directory exists before copying files
+            {
+                if (Directory.Exists(ConfigurationManager.AppSettings["savePath"])) break;
+                else
+                {
+                    Console.WriteLine("Warning, output directory appears to not exist");
+                    Console.WriteLine("Press any key to continue...");
+                    Console.ReadKey(true);
+                }
+            }
+
+            while (i < files.Length) // saves files
             {
                 if (!files[i].CheckNegativeXYZ())
                 {

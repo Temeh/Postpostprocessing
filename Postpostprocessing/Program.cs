@@ -15,9 +15,9 @@ namespace Postpostprocessing
             if (filesFound>0)
             {
                 Console.WriteLine("Found " + filesFound + " merger candidates...");
-                Console.WriteLine("press m for merger console or press space to continue to post processing");
                 while (true)
                 {
+                    Console.WriteLine("press m for merger console or press space to continue to post processing");
                     ConsoleKeyInfo c = Console.ReadKey();
                     if (c.KeyChar == 'm')
                     {
