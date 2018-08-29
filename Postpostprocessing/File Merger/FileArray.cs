@@ -43,7 +43,7 @@ namespace Postpostprocessing
         public FileArray()
         {
             array = new List<List<NCFileMerger>>();
-            array.Add(new List<NCFileMerger>());
+            //array.Add(new List<NCFileMerger>());
         }
 
         void AddArray()
@@ -58,7 +58,7 @@ namespace Postpostprocessing
         public void AddToArray(int i, string filename)
         {
             if (i >= array.Count) i = array.Count; AddArray();
-            array[i].Add(new NCFileMerger(filename + ".nc"));
+           // array[i].Add(new NCFileMerger(filename + ".nc"));
         }
         public void AddToArray(List<string[]> files, int i)
         {

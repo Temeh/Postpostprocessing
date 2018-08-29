@@ -14,19 +14,7 @@ namespace Postpostprocessing
 
         public FileMerger()
         {
-            string[] filenames = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.nc");
-            targetFiles = new List<string>();
-            int i = 0;
-            while (i < filenames.Length)
-            {
-                int name = 0;
-                string fileName = Path.GetFileNameWithoutExtension(filenames[i]);
-                if (int.TryParse(fileName, out name) && ((2000 < name)) && (name < 3000))
-                {
-                    targetFiles.Add(Path.GetFileNameWithoutExtension(filenames[i]));
-                }
-                i++;
-            }
+            CheckForFiles();
         }
 
         /// <summary>
@@ -40,16 +28,10 @@ namespace Postpostprocessing
 
         public void OpenMergerConsole()
         {
-            // initialising files
-            files = new NCFileMerger[targetFiles.Count];
-            int i = 0;
-            foreach (var name in targetFiles)
-            {
-                files[i] = new NCFileMerger(name + ".nc");
-                i++;
-            }
+            InitializeFileList(); // initialising files
+     
 
-            //the actual console
+            //the actual console 
             ListFiles();
             array = new FileArray();
             Console.WriteLine("Starting filemerger...");
@@ -152,6 +134,43 @@ namespace Postpostprocessing
         void Save()
         {
             array.SaveFile();
+            CheckForFiles(); //updates targetFiles list
+            ListFiles();
+        }
+
+        /// <summary>
+        /// Checks for suitable files for merging and adds them to targetFiles
+        /// </summary>
+        void CheckForFiles()
+        {
+            string[] filenames = Directory.GetFiles(AppDomain.CurrentDomain.BaseDirectory, "*.nc");
+            targetFiles = new List<string>();
+            int i = 0;
+            while (i < filenames.Length)
+            {
+                int name = 0;
+                string fileName = Path.GetFileNameWithoutExtension(filenames[i]);
+                if (int.TryParse(fileName, out name) && ((2000 < name)) && (name < 3000))
+                {
+                    targetFiles.Add(Path.GetFileNameWithoutExtension(filenames[i]));
+                }
+                i++;
+            }
+            InitializeFileList();
+        }
+
+        /// <summary>
+        /// Initialized the list of merger files
+        /// </summary>
+        void InitializeFileList()
+        {
+            files = new NCFileMerger[targetFiles.Count];
+            int i = 0;
+            foreach (var name in targetFiles)
+            {
+                files[i] = new NCFileMerger(name + ".nc");
+                i++;
+            }
         }
     }
 }
