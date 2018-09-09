@@ -8,3 +8,4 @@ C:\Users\PCPCPC\Documents\Visual Studio 2010\Projects\PostPostProcessorOutput\Po
 C:\Users\PCPCPC\Documents\Visual Studio 2010\Projects\PostPostProcessorOutput\Program.cs
 C:\Users\PCPCPC\Documents\Visual Studio 2010\Projects\PostPostProcessorOutput\Postpostprocessing.exe
 C:\Users\PCPCPC\Documents\Visual Studio 2010\Projects\PostPostProcessorOutput\Postpostprocessing.pdb
+C:\Users\PCPCPC\Documents\Visual Studio 2010\Projects\Postpostprocessing\Postpostprocessing\obj\x86\Debug\Postpostprocessing.csprojResolveAssemblyReference.cache

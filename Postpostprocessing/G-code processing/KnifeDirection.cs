@@ -10,7 +10,7 @@ namespace Postpostprocessing
     /// <summary>
     /// Updates the G code to prevent the knife form entering the material before it has turned to face the correct direction
     /// </summary>
-    class KnifeDirection :GCodeReader
+    class KnifeDirection : GCodeReader
     {
         NCFile file;
 
@@ -61,8 +61,8 @@ namespace Postpostprocessing
                         whereAmINow = GetLocation(line, whereAmINow, i);
                         if (line.StartsWith("G00") && !foundEntryPoint)
                         {
+
                             rapidMovement = true;
-                            //Array.Copy(whereAmINow[0], startPoint, whereAmINow[0].Length);
                         }
                     }
                     else { i++; continue; }
@@ -71,10 +71,12 @@ namespace Postpostprocessing
                     {
                         if (line.Contains("X") || line.Contains("Y"))
                         {
-                            //Array.Copy(whereAmINow[0], entryPoint, whereAmINow[0].Length);
-                            foundEntryPoint = true;
-                            rapidMovement = false; locationInFile = i;
-                            i++; continue;
+                            if (!line.Contains("Z"))
+                            {
+                                foundEntryPoint = true;
+                                rapidMovement = false; locationInFile = i;
+                                i++; continue;
+                            }
                         }
                     }
 
@@ -157,7 +159,7 @@ namespace Postpostprocessing
             }
             else // detects starting direction if knife is inserted on a straight line
             {
-                newAngle =SharedMethods.CheckDirection(whereAmINow[1], whereAmINow[0]);
+                newAngle = SharedMethods.CheckDirection(whereAmINow[1], whereAmINow[0]);
             }
 
             double oldAngle; string turnDirection;
@@ -207,7 +209,7 @@ namespace Postpostprocessing
                 else if (directionofArcCenter <= 180) angle = directionofArcCenter - 90;
                 else if (directionofArcCenter <= 270) angle = 270 - directionofArcCenter;
                 else if (directionofArcCenter <= 360) angle = directionofArcCenter - 270;
-                angle = angle * (Math.PI / 180); 
+                angle = angle * (Math.PI / 180);
                 double t = Math.Sin(angle);
             }
             double xArcCenter = Math.Abs(Math.Sin(angle) * whereAmINow[0][5]);
@@ -216,12 +218,12 @@ namespace Postpostprocessing
             if (directionofArcCenter > 90 && directionofArcCenter < 270) xArcCenter = -xArcCenter;
             xArcCenter += whereAmINow[0][0]; yArcCenter += whereAmINow[0][1];
             double[] s = new double[2] { xArcCenter, yArcCenter };
-            destinationAngle =SharedMethods.CheckDirection(s, whereAmINow[1]);
+            destinationAngle = SharedMethods.CheckDirection(s, whereAmINow[1]);
             if (whereAmINow[0][6] == 2) destinationAngle -= 90;
             else destinationAngle += 90;
             if (destinationAngle < 0) destinationAngle += 360;
             else if (destinationAngle > 360) destinationAngle -= 360;
-            return destinationAngle;                   
+            return destinationAngle;
         }
 
         /// <summary>
