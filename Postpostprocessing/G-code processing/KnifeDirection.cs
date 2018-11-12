@@ -143,14 +143,15 @@ namespace Postpostprocessing
         /// <param name="i"></param>
         void InsertKnifeTurning(double[][] whereAmINow, int i)
         {
-            /*
-            if (whereAmINow[2] == null || // if we dont know where we are coming from, we fix the knife direction when it arrives at insertion point.
+            // if we dont know where we are coming from, we fix the knife direction when it arrives at insertion point. 
+            // Or if the distance is too great for G02/G03 directional fixing to make sense
+            if (whereAmINow[2] == null || 
                 file.CheckDistance(whereAmINow[1], whereAmINow[2]) > double.Parse(ConfigurationManager.AppSettings["minDistForRapidMove"]))
             {
                 InsertNewPoint(whereAmINow[1], whereAmINow[0], i);
                 return;
             }
-             */
+
             double newAngle;
 
             if (whereAmINow[0][4] >= 0) // detects starting direction of a knife if its inserted into an arc
